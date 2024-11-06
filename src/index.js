@@ -20,6 +20,16 @@ function convertSetToBinary(set) {
     }
     return resultSet;
 }
+function drawNFromSet(validIds, revokedIds, neededIteration) {
+    for (var i = 0; i < neededIteration;) {
+        var bytes = (0, crypto_1.randomBytes)(32);
+        var randomId = Array.from(bytes).map(function (byte) { return byte.toString(2).padStart(8, "0"); }).join("");
+        if (!validIds.has(randomId) && !revokedIds.has(randomId)) {
+            validIds.add(randomId);
+            i++;
+        }
+    }
+}
 function constructBFC(validIds, revokedIds, rHat) {
     if ((validIds === null || validIds === void 0 ? void 0 : validIds.size) > rHat || (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size) > 2 * rHat) {
         console.log("Error: Requirements not fulfilled. Returning empty array");
@@ -30,22 +40,8 @@ function constructBFC(validIds, revokedIds, rHat) {
     var neededS = sHat - (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size);
     validIds = convertSetToBinary(validIds);
     revokedIds = convertSetToBinary(revokedIds);
-    for (var i = 0; i < neededR;) {
-        var bytes = (0, crypto_1.randomBytes)(32);
-        var randomId = Array.from(bytes).map(function (byte) { return byte.toString(2).padStart(8, "0"); }).join("");
-        if (!validIds.has(randomId) && !revokedIds.has(randomId)) {
-            validIds.add(randomId);
-            i++;
-        }
-    }
-    for (var i = 0; i < neededS;) {
-        var bytes = (0, crypto_1.randomBytes)(32);
-        var randomId = Array.from(bytes).map(function (byte) { return byte.toString(2).padStart(8, "0"); }).join("");
-        if (!validIds.has(randomId) && !revokedIds.has(randomId)) {
-            revokedIds.add(randomId);
-            i++;
-        }
-    }
+    drawNFromSet(validIds, revokedIds, neededR);
+    drawNFromSet(validIds, revokedIds, neededS);
     var salted = generateRandom256BitString();
     var pb = 0.5;
     var pa = Math.sqrt(0.5) / 2;

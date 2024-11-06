@@ -21,7 +21,16 @@ function generateRandom256BitString(): string {
     return resultSet
  }
 
-
+ function drawNFromSet(validIds:Set<string>,revokedIds:Set<string>,neededIteration:number){
+   for (let i = 0; i < neededIteration;) {
+      const bytes = randomBytes(32);
+       const randomId = Array.from(bytes).map(byte => byte.toString(2).padStart(8, "0")).join("")
+       if(!validIds.has(randomId) && !revokedIds.has(randomId)){
+          validIds.add(randomId)
+          i++;
+       }
+    }
+ }
 export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<string>, rHat: number): [BloomFilterCascade, string] {
     if(validIds?.size > rHat || revokedIds?.size > 2*rHat){
       console.log("Error: Requirements not fulfilled. Returning empty array")
@@ -30,33 +39,24 @@ export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<s
     const sHat = 2*rHat
     const neededR = rHat - validIds?.size
     const neededS = sHat - revokedIds?.size
+
     validIds = convertSetToBinary(validIds)
     revokedIds = convertSetToBinary(revokedIds)
     
-    for (let i = 0; i < neededR;) {
-      const bytes = randomBytes(32);
-       const randomId = Array.from(bytes).map(byte => byte.toString(2).padStart(8, "0")).join("")
-       if(!validIds.has(randomId) && !revokedIds.has(randomId)){
-          validIds.add(randomId)
-          i++;
-       }
-    }
-    for (let i = 0; i < neededS; ) {
-      const bytes = randomBytes(32);
-      const randomId = Array.from(bytes).map(byte => byte.toString(2).padStart(8, "0")).join("")
-      if(!validIds.has(randomId) && !revokedIds.has(randomId)){
-          revokedIds.add(randomId)
-          i++;
-       }
-   }
+    drawNFromSet(validIds,revokedIds,neededR)
+    drawNFromSet(validIds,revokedIds,neededS)
+
+   
    const salted = generateRandom256BitString()
 
    const pb = 0.5
    const pa = Math.sqrt(0.5) / 2
+
    let includedSet = validIds
    let excludedSet = revokedIds
    let filter: BloomFilterCascade = []
    let cascadeLevel = 1;
+
    while (includedSet.size > 0){
      const currentFilter = new BloomFilter(includedSet.size, cascadeLevel === 1 ? pa : pb);
       for(const id in includedSet){
