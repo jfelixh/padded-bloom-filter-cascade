@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.constructBFC = constructBFC;
 exports.isInBFC = isInBFC;
 var crypto_1 = require("crypto");
-var bloom_filters_1 = require("bloom-filters");
+var bloomfilter_1 = require("bloomfilter");
 function generateRandom256BitString() {
     var bytes = (0, crypto_1.randomBytes)(32);
     return Array.from(bytes)
@@ -54,14 +54,14 @@ function constructBFC(validIds, revokedIds, rHat) {
     var filter = [];
     var cascadeLevel = 1;
     while (includedSet.size > 0) {
-        var currentFilter = new bloom_filters_1.BloomFilter(includedSet.size, cascadeLevel === 1 ? pa : pb);
+        var currentFilter = new bloomfilter_1.BloomFilter(includedSet.size, cascadeLevel === 1 ? pa : pb);
         for (var id in includedSet) {
             currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted); //we interprete cascadeLevel as 8bit
         }
         filter.push(currentFilter);
         var falsePositives = new Set();
         for (var id in excludedSet) {
-            if (currentFilter.has(id)) {
+            if (currentFilter.test(id)) {
                 falsePositives.add(id);
             }
         }
@@ -78,7 +78,7 @@ console.log(result);
 function isInBFC(value, bfc) {
     for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
         var bloomFilter = bfc_1[_i];
-        if (bloomFilter.has(value)) {
+        if (bloomFilter.test(value)) {
             return true;
         }
     }

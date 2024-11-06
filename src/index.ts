@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { BloomFilter } from 'bloom-filters';
+import { BloomFilter } from 'bloomfilter';
 type BloomFilterCascade = BloomFilter[];
 
 function generateRandom256BitString(): string { 
@@ -65,7 +65,7 @@ export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<s
       filter.push(currentFilter)
       const falsePositives = new Set<string>()
       for( const id in excludedSet){
-          if(currentFilter.has(id)){
+          if(currentFilter.test(id)){
                falsePositives.add(id)
           }
       }
@@ -84,7 +84,7 @@ console.log(result)
 
 export function isInBFC(value:string, bfc:BloomFilterCascade): boolean {
   for(const bloomFilter of bfc){
-     if(bloomFilter.has(value)){
+     if(bloomFilter.test(value)){
           return true;
      }
   }
