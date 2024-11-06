@@ -1,10 +1,13 @@
 {
   "devDependencies": {
+    "@types/node": "^22.9.0",
     "typescript": "^5.6.3"
   },
-  
-    "scripts": {
-      "build": "tsc src/index.ts",
-      "start": "node src/index.js"
-    }
+  "scripts": {
+    "build": "tsc src/index.ts",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "bloom-filters": "^3.0.2"
+  }
 }

@@ -1,27 +1,94 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.constructBFC = constructBFC;
+exports.isInBFC = isInBFC;
+var crypto_1 = require("crypto");
+var bloom_filters_1 = require("bloom-filters");
+function generateRandom256BitString() {
+    var bytes = (0, crypto_1.randomBytes)(32);
+    return Array.from(bytes)
+        .map(function (byte) { return byte.toString(2).padStart(8, '0'); })
+        .join('');
+}
+function convertHexToBinary(hex) {
+    return (parseInt(hex, 16).toString(2)).padStart(8, '0');
+}
+function convertSetToBinary(set) {
+    var resultSet = new Set();
+    for (var id in set) {
+        resultSet.add(convertHexToBinary(id));
+    }
+    return resultSet;
+}
 function constructBFC(validIds, revokedIds, rHat) {
     if ((validIds === null || validIds === void 0 ? void 0 : validIds.size) > rHat || (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size) > 2 * rHat) {
-        console.log("Error: Requirements not fulfilled");
-        throw new Error("Requirements not fulfilled");
+        console.log("Error: Requirements not fulfilled. Returning empty array");
+        return [[], "0"];
     }
     var sHat = 2 * rHat;
-    var randomIds = [];
-    for (var i = 0; i < 100000; i++) {
-        var bytes = new Uint8Array(32);
-        // load cryptographically random bytes into array
-        window.crypto.getRandomValues(bytes);
-        // convert byte array to hexademical representation
-        var bytesHex = bytes.reduce(function (o, v) { return o + ('00' + v.toString(16)).slice(-2); }, '');
-        // convert hexademical value to a decimal string
-        randomIds.push(BigInt('0x' + bytesHex).toString(10));
-        console.log("RandomIds", JSON.stringify(randomIds));
+    var neededR = rHat - (validIds === null || validIds === void 0 ? void 0 : validIds.size);
+    var neededS = sHat - (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size);
+    validIds = convertSetToBinary(validIds);
+    revokedIds = convertSetToBinary(revokedIds);
+    for (var i = 0; i < neededR;) {
+        var bytes = (0, crypto_1.randomBytes)(32);
+        var randomId = Array.from(bytes).map(function (byte) { return byte.toString(2).padStart(8, "0"); }).join("");
+        if (!validIds.has(randomId) && !revokedIds.has(randomId)) {
+            validIds.add(randomId);
+            i++;
+        }
     }
-    return [];
+    for (var i = 0; i < neededS;) {
+        var bytes = (0, crypto_1.randomBytes)(32);
+        var randomId = Array.from(bytes).map(function (byte) { return byte.toString(2).padStart(8, "0"); }).join("");
+        if (!validIds.has(randomId) && !revokedIds.has(randomId)) {
+            revokedIds.add(randomId);
+            i++;
+        }
+    }
+    var salted = generateRandom256BitString();
+    var pb = 0.5;
+    var pa = Math.sqrt(0.5) / 2;
+    var includedSet = validIds;
+    var excludedSet = revokedIds;
+    var filter = [];
+    var cascadeLevel = 1;
+    while (includedSet.size > 0) {
+        var currentFilter = new bloom_filters_1.BloomFilter(includedSet.size, cascadeLevel === 1 ? pa : pb);
+        for (var id in includedSet) {
+            currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted); //we interprete cascadeLevel as 8bit
+        }
+        filter.push(currentFilter);
+        var falsePositives = new Set();
+        for (var id in excludedSet) {
+            if (currentFilter.has(id)) {
+                falsePositives.add(id);
+            }
+        }
+        excludedSet = includedSet;
+        includedSet = falsePositives;
+        cascadeLevel++;
+    }
+    return [
+        filter, salted
+    ];
 }
 var result = constructBFC(new Set(["1", "4", "5"]), new Set(["2", "3", "6", "7", "8"]), 3);
 console.log(result);
-// export function isInBFC(value:string, bfc:BloomFilterCascade): boolean
-// export function toBytes(bfc:BloomFilterCascade): byte[]
-// export function fromBytes(serialized:byte[]): BloomFilterCascade
+function isInBFC(value, bfc) {
+    for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
+        var bloomFilter = bfc_1[_i];
+        if (bloomFilter.has(value)) {
+            return true;
+        }
+    }
+    return false;
+}
+// export function toBytes(bfc:BloomFilterCascade): byte[] {
+//      for(const bloomFilter of bfc){
+//           return []
+//        }
+// }
+//There is no byte type in typescript
+// export function fromBytes(serialized:byte[]): BloomFilterCascade { 
+// }
