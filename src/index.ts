@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import { BloomFilter } from 'bloomfilter';
+import hex2Bin from 'hex-to-bin';
 import { symlink } from 'fs';
 type BloomFilterCascade = BloomFilter[];
 
@@ -10,14 +11,15 @@ function generateRandom256BitString(): string {
         .join('');
  }
 
- function convertHexToBinary(hex: string): string {
-    return (parseInt(hex, 16).toString(2)).padStart(8, '0') // imporant: numbers are to big and therefore not precise
- }
+ // // imporant: numbers are to big and therefore we have not precise results if using this function. Use hex2Bin instead
+//  function convertHexToBinary(hex: string): string {
+//     return (parseInt(hex, 16).toString(2)).padStart(8, '0') 
+//  }
 
  function convertSetToBinary(set: Set<string>): Set<string> {
      const resultSet = new Set<string>()
      set.forEach(id => {
-      resultSet.add(convertHexToBinary(id))
+      resultSet.add(hex2Bin(id))
   });
     //for(let i=0;i<set.size;i++){// NOT WORKING
     //    resultSet.add(convertHexToBinary(""))//TODO
@@ -134,11 +136,21 @@ export function isInBFC(value:string, bfc:BloomFilterCascade): boolean {
   }
   return false;
 }
-// export function toBytes(bfc:BloomFilterCascade): byte[] {
+
+//TODO: Chan, can you please also check how to do the serialization. I dont understand how it is serialized. If you dont understant either, maybe it is better to create our own bloom filter 
+// export function toBytes(bfc:BloomFilterCascade): number[] {
 //      for(const bloomFilter of bfc){
-//           return []
+//       var currentFilter = [].slice.call(bloomFilter.buckets)
+//        console.log("Serialized filter",JSON.stringify(bloomFilter.buckets) )
 //        }
+  
+//  return []
+
 // }
+
+// toBytes(result[0])
+
+
 
 //There is no byte type in typescript
 // export function fromBytes(serialized:byte[]): BloomFilterCascade { 
