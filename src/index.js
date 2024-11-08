@@ -15,9 +15,12 @@ function convertHexToBinary(hex) {
 }
 function convertSetToBinary(set) {
     var resultSet = new Set();
-    for (var id in set) {
+    set.forEach(function (id) {
         resultSet.add(convertHexToBinary(id));
-    }
+    });
+    //for(let i=0;i<set.size;i++){// NOT WORKING
+    //    resultSet.add(convertHexToBinary(""))//TODO
+    //}
     return resultSet;
 }
 function drawNFromSet(validIds, revokedIds, neededIteration) {
@@ -49,27 +52,46 @@ function constructBFC(validIds, revokedIds, rHat) {
     var excludedSet = revokedIds;
     var filter = [];
     var cascadeLevel = 1;
-    while (includedSet.size > 0) {
-        var currentFilter = new bloomfilter_1.BloomFilter(includedSet.size, cascadeLevel === 1 ? pa : pb);
-        for (var id in includedSet) {
+    var _loop_1 = function () {
+        var sizeInBit = (-1.0 * includedSet.size * Math.log(cascadeLevel === 1 ? pa : pb)) / (Math.log(2) * Math.log(2));
+        var currentFilter = new bloomfilter_1.BloomFilter(sizeInBit, 1);
+        includedSet.forEach(function (id) {
             currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted); //we interprete cascadeLevel as 8bit
-        }
+        });
         filter.push(currentFilter);
         var falsePositives = new Set();
-        for (var id in excludedSet) {
-            if (currentFilter.test(id)) {
+        excludedSet.forEach(function (id) {
+            if (currentFilter.test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
                 falsePositives.add(id);
             }
-        }
+        });
+        //for( const id in excludedSet){
+        //    if(currentFilter.test(id)){
+        //         falsePositives.add(id)
+        //    }
+        //}
+        console.log("false positive");
+        console.log(falsePositives);
         excludedSet = includedSet;
         includedSet = falsePositives;
         cascadeLevel++;
+    };
+    while (includedSet.size > 0) {
+        _loop_1();
     }
     return [
         filter, salted
     ];
 }
-var result = constructBFC(new Set(["1", "4", "5"]), new Set(["2", "3", "6", "7", "8"]), 3);
+var validTestSet = new Set();
+for (var i = 1; i <= 100000; i++) {
+    validTestSet.add(generateRandom256BitString()); // Convert each number to a string and add it to the Set
+}
+var invalidTestSet = new Set();
+for (var i = 100000; i <= 300000; i++) {
+    invalidTestSet.add(generateRandom256BitString()); // Convert each number to a string and add it to the Set
+}
+var result = constructBFC(validTestSet, invalidTestSet, 100001);
 console.log(result);
 function isInBFC(value, bfc) {
     for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
