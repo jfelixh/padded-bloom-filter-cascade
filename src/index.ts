@@ -11,7 +11,7 @@ function generateRandom256BitString(): string {
  }
 
  function convertHexToBinary(hex: string): string {
-    return (parseInt(hex, 16).toString(2)).padStart(8, '0')
+    return (parseInt(hex, 16).toString(2)).padStart(8, '0') // imporant: numbers are to big and therefore not precise
  }
 
  function convertSetToBinary(set: Set<string>): Set<string> {
@@ -25,12 +25,15 @@ function generateRandom256BitString(): string {
     return resultSet
  }
 
- function drawNFromSet(validIds:Set<string>,revokedIds:Set<string>,neededIteration:number){
+ function drawNFromSet(validIds:Set<string>,revokedIds:Set<string>,neededIteration:number, addToValidIds: boolean){
    for (let i = 0; i < neededIteration;) {
-      const bytes = randomBytes(32);
-       const randomId = Array.from(bytes).map(byte => byte.toString(2).padStart(8, "0")).join("")
+       const randomId = generateRandom256BitString()
        if(!validIds.has(randomId) && !revokedIds.has(randomId)){
-          validIds.add(randomId)
+         if(addToValidIds){
+            validIds.add(randomId)
+         }else {
+            revokedIds.add(randomId)
+         }
           i++;
        }
     }
@@ -47,10 +50,9 @@ export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<s
     validIds = convertSetToBinary(validIds)
     revokedIds = convertSetToBinary(revokedIds)
     
-    drawNFromSet(validIds,revokedIds,neededR)
-    drawNFromSet(validIds,revokedIds,neededS)
+    drawNFromSet(validIds,revokedIds,neededR, true)
+    drawNFromSet(validIds,revokedIds,neededS, false)
 
-   
    const salted = generateRandom256BitString()
 
    const pb = 0.5
@@ -80,8 +82,10 @@ export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<s
       //         falsePositives.add(id)
       //    }
       //}
-      console.log("false positive")
-      console.log(falsePositives)
+      // if(falsePositives.size < 10){
+      //    console.log("false positive", falsePositives)
+      // }
+      console.log("false positive", falsePositives.size)
       excludedSet = includedSet
       includedSet = falsePositives
       cascadeLevel++;
@@ -94,14 +98,33 @@ export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<s
 
 const validTestSet = new Set<string>();
 for (let i = 1; i <= 100000; i++) {
-   validTestSet.add(generateRandom256BitString()); // Convert each number to a string and add it to the Set
+   let randomHex = '';
+   const hexLength = 64;
+       
+       // Generate a 64-character (32-byte) hex value
+       for (let i = 0; i < hexLength / 8; i++) {
+           // Generate a random 8-character hex segment
+           const segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+           randomHex += segment;
+       }
+   validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
 const invalidTestSet = new Set<string>();
 for (let i = 100000; i <= 300000; i++) {
-   invalidTestSet.add(generateRandom256BitString()); // Convert each number to a string and add it to the Set
+   const hexLength = 64; // Desired length of each hex value
+
+       let randomHex = '';
+       
+       // Generate a 64-character (32-byte) hex value
+       for (let i = 0; i < hexLength / 8; i++) {
+           // Generate a random 8-character hex segment
+           const segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+           randomHex += segment;
+       }
+   invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
 const result = constructBFC(validTestSet, invalidTestSet, 100001)
-console.log(result)
+//console.log(result)
 
 export function isInBFC(value:string, bfc:BloomFilterCascade): boolean {
   for(const bloomFilter of bfc){

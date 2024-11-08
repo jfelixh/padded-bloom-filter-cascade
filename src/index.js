@@ -11,7 +11,7 @@ function generateRandom256BitString() {
         .join('');
 }
 function convertHexToBinary(hex) {
-    return (parseInt(hex, 16).toString(2)).padStart(8, '0');
+    return (parseInt(hex, 16).toString(2)).padStart(8, '0'); // imporant: numbers are to big and therefore not precise
 }
 function convertSetToBinary(set) {
     var resultSet = new Set();
@@ -23,12 +23,16 @@ function convertSetToBinary(set) {
     //}
     return resultSet;
 }
-function drawNFromSet(validIds, revokedIds, neededIteration) {
+function drawNFromSet(validIds, revokedIds, neededIteration, addToValidIds) {
     for (var i = 0; i < neededIteration;) {
-        var bytes = (0, crypto_1.randomBytes)(32);
-        var randomId = Array.from(bytes).map(function (byte) { return byte.toString(2).padStart(8, "0"); }).join("");
+        var randomId = generateRandom256BitString();
         if (!validIds.has(randomId) && !revokedIds.has(randomId)) {
-            validIds.add(randomId);
+            if (addToValidIds) {
+                validIds.add(randomId);
+            }
+            else {
+                revokedIds.add(randomId);
+            }
             i++;
         }
     }
@@ -43,8 +47,8 @@ function constructBFC(validIds, revokedIds, rHat) {
     var neededS = sHat - (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size);
     validIds = convertSetToBinary(validIds);
     revokedIds = convertSetToBinary(revokedIds);
-    drawNFromSet(validIds, revokedIds, neededR);
-    drawNFromSet(validIds, revokedIds, neededS);
+    drawNFromSet(validIds, revokedIds, neededR, true);
+    drawNFromSet(validIds, revokedIds, neededS, false);
     var salted = generateRandom256BitString();
     var pb = 0.5;
     var pa = Math.sqrt(0.5) / 2;
@@ -70,8 +74,10 @@ function constructBFC(validIds, revokedIds, rHat) {
         //         falsePositives.add(id)
         //    }
         //}
-        console.log("false positive");
-        console.log(falsePositives);
+        // if(falsePositives.size < 10){
+        //    console.log("false positive", falsePositives)
+        // }
+        console.log("false positive", falsePositives.size);
         excludedSet = includedSet;
         includedSet = falsePositives;
         cascadeLevel++;
@@ -85,14 +91,30 @@ function constructBFC(validIds, revokedIds, rHat) {
 }
 var validTestSet = new Set();
 for (var i = 1; i <= 100000; i++) {
-    validTestSet.add(generateRandom256BitString()); // Convert each number to a string and add it to the Set
+    var randomHex = '';
+    var hexLength = 64;
+    // Generate a 64-character (32-byte) hex value
+    for (var i_1 = 0; i_1 < hexLength / 8; i_1++) {
+        // Generate a random 8-character hex segment
+        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+        randomHex += segment;
+    }
+    validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
 var invalidTestSet = new Set();
 for (var i = 100000; i <= 300000; i++) {
-    invalidTestSet.add(generateRandom256BitString()); // Convert each number to a string and add it to the Set
+    var hexLength = 64; // Desired length of each hex value
+    var randomHex = '';
+    // Generate a 64-character (32-byte) hex value
+    for (var i_2 = 0; i_2 < hexLength / 8; i_2++) {
+        // Generate a random 8-character hex segment
+        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+        randomHex += segment;
+    }
+    invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
 var result = constructBFC(validTestSet, invalidTestSet, 100001);
-console.log(result);
+//console.log(result)
 function isInBFC(value, bfc) {
     for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
         var bloomFilter = bfc_1[_i];
