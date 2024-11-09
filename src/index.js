@@ -3,8 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.constructBFC = constructBFC;
 exports.isInBFC = isInBFC;
 var crypto_1 = require("crypto");
-var bloomfilter_1 = require("bloomfilter");
+var BloomFilter = require('bloom-filters').BloomFilter;
 var hex_to_bin_1 = require("hex-to-bin");
+// type BloomFilterCascade = BloomFilter[];
 function generateRandom256BitString() {
     var bytes = (0, crypto_1.randomBytes)(32);
     return Array.from(bytes)
@@ -58,35 +59,31 @@ function constructBFC(validIds, revokedIds, rHat) {
     var excludedSet = revokedIds;
     var filter = [];
     var cascadeLevel = 1;
+    var falsepostive_last = 0;
     var _loop_1 = function () {
         var sizeInBit = (-1.0 * includedSet.size * Math.log(cascadeLevel === 1 ? pa : pb)) / (Math.log(2) * Math.log(2));
-        var currentFilter = new bloomfilter_1.BloomFilter(sizeInBit, 1);
+        console.log(sizeInBit);
+        var currentFilter = new BloomFilter(sizeInBit, 1);
         includedSet.forEach(function (id) {
             currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted); //we interprete cascadeLevel as 8bit
         });
         filter.push(currentFilter);
         var falsePositives = new Set();
         excludedSet.forEach(function (id) {
-            if (currentFilter.test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
+            if (currentFilter.has(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
                 falsePositives.add(id);
             }
         });
-        //for( const id in excludedSet){
-        //    if(currentFilter.test(id)){
-        //         falsePositives.add(id)
-        //    }
-        //}
-        // if(falsePositives.size < 10){
-        //    console.log("false positive", falsePositives)
-        // }
         console.log("false positive", falsePositives.size);
         excludedSet = includedSet;
         includedSet = falsePositives;
         cascadeLevel++;
+        falsepostive_last = falsePositives.size;
     };
     while (includedSet.size > 0) {
         _loop_1();
     }
+    console.log([filter, salted]);
     return [
         filter, salted
     ];

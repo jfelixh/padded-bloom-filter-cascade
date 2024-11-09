@@ -9,6 +9,7 @@
     "start": "node src/index.js"
   },
   "dependencies": {
+    "bloom-filters": "^3.0.2",
     "bloomfilter": "^0.0.18",
     "hex-to-bin": "^1.0.1"
   }

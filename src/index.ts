@@ -1,9 +1,10 @@
 import { randomBytes } from 'crypto';
-import { BloomFilter } from 'bloomfilter';
+const {BloomFilter} = require('bloom-filters')
 import hex2Bin from 'hex-to-bin';
-import { symlink } from 'fs';
-type BloomFilterCascade = BloomFilter[];
 
+
+// type BloomFilterCascade = BloomFilter[];
+ 
 function generateRandom256BitString(): string { 
      const bytes = randomBytes(32);
      return Array.from(bytes)
@@ -40,7 +41,7 @@ function generateRandom256BitString(): string {
        }
     }
  }
-export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<string>, rHat: number): [BloomFilterCascade, string] {
+export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, revokedIds: Set<string>, rHat: number): [typeof BloomFilter[], string] {
     if(validIds?.size > rHat || revokedIds?.size > 2*rHat){
       console.log("Error: Requirements not fulfilled. Returning empty array")
       return [[], "0"]
@@ -62,37 +63,31 @@ export function constructBFC(this: any, validIds: Set<string>, revokedIds: Set<s
 
    let includedSet = validIds
    let excludedSet = revokedIds
-   let filter: BloomFilterCascade = []
+   let filter = []
    let cascadeLevel = 1;
-
+   let falsepostive_last=0;
    while (includedSet.size > 0){
      const sizeInBit= (-1.0*includedSet.size*Math.log(cascadeLevel===1?pa:pb))/(Math.log(2)*Math.log(2))
+     console.log(sizeInBit)
      const currentFilter = new BloomFilter(sizeInBit, 1);
       includedSet.forEach(id=>{
         currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted) //we interprete cascadeLevel as 8bit
       });
       filter.push(currentFilter)
 
-      const falsePositives = new Set<string>()
+      let falsePositives = new Set<string>()
       excludedSet.forEach(id => {
-         if(currentFilter.test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)){
+         if(currentFilter.has(id + cascadeLevel.toString(2).padStart(8, "0") + salted)){
                     falsePositives.add(id)
                 }
      });
-      //for( const id in excludedSet){
-      //    if(currentFilter.test(id)){
-      //         falsePositives.add(id)
-      //    }
-      //}
-      // if(falsePositives.size < 10){
-      //    console.log("false positive", falsePositives)
-      // }
       console.log("false positive", falsePositives.size)
       excludedSet = includedSet
       includedSet = falsePositives
       cascadeLevel++;
+      falsepostive_last=falsePositives.size
    }
-     
+     console.log([filter,salted])
    return [
      filter, salted
    ]
@@ -128,7 +123,7 @@ for (let i = 100000; i <= 300000; i++) {
 const result = constructBFC(validTestSet, invalidTestSet, 100001)
 //console.log(result)
 
-export function isInBFC(value:string, bfc:BloomFilterCascade): boolean {
+export function isInBFC(value:string, bfc:typeof BloomFilter[]): boolean {
   for(const bloomFilter of bfc){
      if(bloomFilter.test(value)){
           return true;
