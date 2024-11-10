@@ -157,6 +157,43 @@ export function serializeBloomFilterCascade(bfc:[typeof BloomFilter[], string]):
  return serializedArray 
 }
 
+function binaryStringToBuffer(binaryString: string): Buffer {
+   const byteArray = [];
+
+   // Add padding to binary string if necessary
+   const paddedBinaryString = binaryString.padStart(Math.ceil(binaryString.length / 8) * 8, '0');
+
+   // Convert every 8 bits into a byte (number)
+   for (let i = 0; i < paddedBinaryString.length; i += 8) {
+       const byte = paddedBinaryString.slice(i, i + 8);
+       byteArray.push(parseInt(byte, 2)); 
+   }
+
+   return Buffer.from(byteArray); 
+}
+
+export function toDataHexString(bfc:[typeof BloomFilter[], string]): string {
+  const serializedCascade = bfc[0].map(filter => {
+   // Create and fill the buffer with the filter content
+   const currentFilterBuffer = Buffer.from(filter._filter.array);
+  
+   // Allocate 4 Bytes for lengthPrefix. The more items we have, the bigger the length would be
+   const lengthPrefix = Buffer.alloc(4);  
+   lengthPrefix.writeUInt32BE(currentFilterBuffer.length, 0);  // Store the length in the Buffer using big endian
+   // For each filter concatinate the filter itself with its length
+   return Buffer.concat([lengthPrefix, currentFilterBuffer]); 
+  });
+
+  // Create a Buffer to store the salt
+  const serializedSalt =  binaryStringToBuffer(bfc[1])
+  // Create a Buffer from the array of Buffers
+  const serializedCascadeBuffer = Buffer.concat(serializedCascade);
+  // Concatinate the salt and the buffer of filterCascade
+  const serializedArray =  Buffer.concat([serializedSalt, serializedCascadeBuffer]);
+  // Return a string hex value
+ return `0x${serializedArray.toString('hex')}`
+}
+
 export function deserializeBloomFilterCascade(serialized: string): [typeof BloomFilter[], string] {
    // Transform JSON to object
    const parsedData = JSON.parse(serialized);
@@ -173,3 +210,37 @@ export function deserializeBloomFilterCascade(serialized: string): [typeof Bloom
    });
    return [bloomFilters, parsedData.salt];
  }
+
+
+
+ export function fromDataHexString(serialized: string): [typeof BloomFilter[], string] {
+   // Create a buffer from the string hex value by first removing 0x
+   const buffer = Buffer.from(serialized.slice(2), 'hex');
+
+  // Extract the salt - the first 32 bytes
+  const saltBuffer = buffer.subarray(0, 32);
+  const salt = Array.from(saltBuffer).map(byte => byte.toString(2).padStart(8, '0')).join('')
+  
+  const bloomFilters: typeof BloomFilter[] = [];
+
+  let startIndex = 32
+  while (startIndex < buffer.length) {
+    // Read the length which takes 4 bytes
+    const lengthPrefix = buffer.readUInt32BE(startIndex);
+    startIndex += 4;
+
+    // Read the Bloom filter content 
+    const filterContent = buffer.subarray(startIndex, startIndex + lengthPrefix);
+    startIndex += lengthPrefix;
+
+    
+    // Create a new bloom filter of size in bits and store the filter content
+    const currentFilter = new BloomFilter(filterContent.length * 8)
+    currentFilter._filter.array = Array.from(filterContent)
+
+    bloomFilters.push(currentFilter);
+  }
+  return [bloomFilters, salt];
+ }
+
+ fromDataHexString(toDataHexString(result))

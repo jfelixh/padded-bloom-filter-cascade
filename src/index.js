@@ -3,7 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.constructBFC = constructBFC;
 exports.isInBFC = isInBFC;
 exports.serializeBloomFilterCascade = serializeBloomFilterCascade;
+exports.toDataHexString = toDataHexString;
 exports.deserializeBloomFilterCascade = deserializeBloomFilterCascade;
+exports.fromDataHexString = fromDataHexString;
 var crypto_1 = require("crypto");
 var BloomFilter = require('bloom-filters').BloomFilter;
 var hex_to_bin_1 = require("hex-to-bin");
@@ -146,6 +148,36 @@ function serializeBloomFilterCascade(bfc) {
     var serializedArray = JSON.stringify({ sizeBloomFilterCascade: bfc[0].length, salt: bfc[1], bloomFilters: bfc[0] });
     return serializedArray;
 }
+function binaryStringToBuffer(binaryString) {
+    var byteArray = [];
+    // Add padding to binary string if necessary
+    var paddedBinaryString = binaryString.padStart(Math.ceil(binaryString.length / 8) * 8, '0');
+    // Convert every 8 bits into a byte (number)
+    for (var i = 0; i < paddedBinaryString.length; i += 8) {
+        var byte = paddedBinaryString.slice(i, i + 8);
+        byteArray.push(parseInt(byte, 2));
+    }
+    return Buffer.from(byteArray);
+}
+function toDataHexString(bfc) {
+    var serializedCascade = bfc[0].map(function (filter) {
+        // Create and fill the buffer with the filter content
+        var currentFilterBuffer = Buffer.from(filter._filter.array);
+        // Allocate 4 Bytes for lengthPrefix. The more items we have, the bigger the length would be
+        var lengthPrefix = Buffer.alloc(4);
+        lengthPrefix.writeUInt32BE(currentFilterBuffer.length, 0); // Store the length in the Buffer using big endian
+        // For each filter concatinate the filter itself with its length
+        return Buffer.concat([lengthPrefix, currentFilterBuffer]);
+    });
+    // Create a Buffer to store the salt
+    var serializedSalt = binaryStringToBuffer(bfc[1]);
+    // Create a Buffer from the array of Buffers
+    var serializedCascadeBuffer = Buffer.concat(serializedCascade);
+    // Concatinate the salt and the buffer of filterCascade
+    var serializedArray = Buffer.concat([serializedSalt, serializedCascadeBuffer]);
+    // Return a string hex value
+    return "0x".concat(serializedArray.toString('hex'));
+}
 function deserializeBloomFilterCascade(serialized) {
     // Transform JSON to object
     var parsedData = JSON.parse(serialized);
@@ -159,3 +191,26 @@ function deserializeBloomFilterCascade(serialized) {
     });
     return [bloomFilters, parsedData.salt];
 }
+function fromDataHexString(serialized) {
+    // Create a buffer from the string hex value by first removing 0x
+    var buffer = Buffer.from(serialized.slice(2), 'hex');
+    // Extract the salt - the first 32 bytes
+    var saltBuffer = buffer.subarray(0, 32);
+    var salt = Array.from(saltBuffer).map(function (byte) { return byte.toString(2).padStart(8, '0'); }).join('');
+    var bloomFilters = [];
+    var startIndex = 32;
+    while (startIndex < buffer.length) {
+        // Read the length which takes 4 bytes
+        var lengthPrefix = buffer.readUInt32BE(startIndex);
+        startIndex += 4;
+        // Read the Bloom filter content 
+        var filterContent = buffer.subarray(startIndex, startIndex + lengthPrefix);
+        startIndex += lengthPrefix;
+        // Create a new bloom filter of size in bits and store the filter content
+        var currentFilter = new BloomFilter(filterContent.length * 8);
+        currentFilter._filter.array = Array.from(filterContent);
+        bloomFilters.push(currentFilter);
+    }
+    return [bloomFilters, salt];
+}
+fromDataHexString(toDataHexString(result));
