@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.constructBFC = constructBFC;
 exports.isInBFC = isInBFC;
+exports.serializeBloomFilterCascade = serializeBloomFilterCascade;
+exports.deserializeBloomFilterCascade = deserializeBloomFilterCascade;
 var crypto_1 = require("crypto");
 var BloomFilter = require('bloom-filters').BloomFilter;
 var hex_to_bin_1 = require("hex-to-bin");
@@ -59,6 +61,7 @@ function constructBFC(validIds, revokedIds, rHat) {
     var excludedSet = revokedIds;
     var filter = [];
     var cascadeLevel = 1;
+    //Why is this falsepositive_last needed?
     var falsepostive_last = 0;
     var _loop_1 = function () {
         var sizeInBit = (-1.0 * includedSet.size * Math.log(cascadeLevel === 1 ? pa : pb)) / (Math.log(2) * Math.log(2));
@@ -117,21 +120,42 @@ var result = constructBFC(validTestSet, invalidTestSet, 100001);
 function isInBFC(value, bfc) {
     for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
         var bloomFilter = bfc_1[_i];
-        if (bloomFilter.test(value)) {
+        if (bloomFilter.has(value)) {
             return true;
         }
     }
     return false;
 }
-//TODO: Chan, can you please also check how to do the serialization. I dont understand how it is serialized. If you dont understant either, maybe it is better to create our own bloom filter 
-// export function toBytes(bfc:BloomFilterCascade): number[] {
-//      for(const bloomFilter of bfc){
-//       var currentFilter = [].slice.call(bloomFilter.buckets)
-//        console.log("Serialized filter",JSON.stringify(bloomFilter.buckets) )
-//        }
-//  return []
-// }
-// toBytes(result[0])
-//There is no byte type in typescript
-// export function fromBytes(serialized:byte[]): BloomFilterCascade { 
-// }
+function serializeBloomFilterCascade(bfc) {
+    bfc[0].forEach(function (filter) {
+        // Transform bloomFilterCascade to JSON format 
+        filter.toJSON = function () {
+            // Convert each element of _filter.array to an 8-bit binary string
+            var binaryContent = Object.values(filter._filter.array).map(function (byte) { return byte.toString(2).padStart(8, '0'); });
+            // The JSON for each filter should contain only the size and the bits in the filter
+            return {
+                filter: {
+                    size: this._filter.size,
+                    content: binaryContent
+                }
+            };
+        };
+    });
+    // The serialized object at the end should contain the size of BloomFilterCascade, the salt, and every bloomFilter
+    // JSON is a better approach then byte[] because we dont need to use length encoding
+    var serializedArray = JSON.stringify({ sizeBloomFilterCascade: bfc[0].length, salt: bfc[1], bloomFilters: bfc[0] });
+    return serializedArray;
+}
+function deserializeBloomFilterCascade(serialized) {
+    // Transform JSON to object
+    var parsedData = JSON.parse(serialized);
+    // Transform each value of the bloom filter to decimal (see serialization method for more info)
+    var bloomFilters = parsedData.bloomFilters.map(function (filterData) {
+        var byteArray = filterData.filter.content.map(function (binaryString) { return parseInt(binaryString, 2); });
+        // Create a new filter with the decimal data 
+        var filter = new BloomFilter(filterData.filter.size);
+        filter._filter.array = byteArray;
+        return filter;
+    });
+    return [bloomFilters, parsedData.salt];
+}

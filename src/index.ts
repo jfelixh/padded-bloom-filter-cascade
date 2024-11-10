@@ -65,6 +65,7 @@ export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, re
    let excludedSet = revokedIds
    let filter = []
    let cascadeLevel = 1;
+   //Why is this falsepositive_last needed?
    let falsepostive_last=0;
    while (includedSet.size > 0){
      const sizeInBit= (-1.0*includedSet.size*Math.log(cascadeLevel===1?pa:pb))/(Math.log(2)*Math.log(2))
@@ -125,28 +126,50 @@ const result = constructBFC(validTestSet, invalidTestSet, 100001)
 
 export function isInBFC(value:string, bfc:typeof BloomFilter[]): boolean {
   for(const bloomFilter of bfc){
-     if(bloomFilter.test(value)){
+     if(bloomFilter.has(value)){
           return true;
      }
   }
   return false;
 }
 
-//TODO: Chan, can you please also check how to do the serialization. I dont understand how it is serialized. If you dont understant either, maybe it is better to create our own bloom filter 
-// export function toBytes(bfc:BloomFilterCascade): number[] {
-//      for(const bloomFilter of bfc){
-//       var currentFilter = [].slice.call(bloomFilter.buckets)
-//        console.log("Serialized filter",JSON.stringify(bloomFilter.buckets) )
-//        }
-  
-//  return []
+export function serializeBloomFilterCascade(bfc:[typeof BloomFilter[], string]): string {
+   bfc[0].forEach(filter => {
+      // Transform bloomFilterCascade to JSON format 
+      filter.toJSON = function() {
+      
+    // Convert each element of _filter.array to an 8-bit binary string
+    const binaryContent = Object.values(filter._filter.array as number[]).map((byte: number) => byte.toString(2).padStart(8, '0'));
 
-// }
+    // The JSON for each filter should contain only the size and the bits in the filter
+          return {
+              filter: {
+               size: this._filter.size,
+               content: binaryContent
+              }
+          };
+      };
+  });
 
-// toBytes(result[0])
+   // The serialized object at the end should contain the size of BloomFilterCascade, the salt, and every bloomFilter
+   // JSON is a better approach then byte[] because we dont need to use length encoding
+   const serializedArray = JSON.stringify({sizeBloomFilterCascade: bfc[0].length, salt: bfc[1], bloomFilters: bfc[0]});  
+ return serializedArray 
+}
 
-
-
-//There is no byte type in typescript
-// export function fromBytes(serialized:byte[]): BloomFilterCascade { 
-// }
+export function deserializeBloomFilterCascade(serialized: string): [typeof BloomFilter[], string] {
+   // Transform JSON to object
+   const parsedData = JSON.parse(serialized);
+   
+   // Transform each value of the bloom filter to decimal (see serialization method for more info)
+   const bloomFilters = parsedData.bloomFilters.map((filterData: any) => {
+     const byteArray = filterData.filter.content.map((binaryString: string) => parseInt(binaryString, 2));
+ 
+     // Create a new filter with the decimal data 
+     const filter = new BloomFilter(filterData.filter.size); 
+     filter._filter.array = byteArray; 
+ 
+     return filter;
+   });
+   return [bloomFilters, parsedData.salt];
+ }
