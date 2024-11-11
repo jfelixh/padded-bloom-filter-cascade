@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.convertSetToBinary = convertSetToBinary;
+exports.drawNFromSet = drawNFromSet;
 exports.constructBFC = constructBFC;
 exports.isInBFC = isInBFC;
 exports.serializeBloomFilterCascade = serializeBloomFilterCascade;
@@ -52,8 +54,12 @@ function constructBFC(validIds, revokedIds, rHat) {
     var sHat = 2 * rHat;
     var neededR = rHat - (validIds === null || validIds === void 0 ? void 0 : validIds.size);
     var neededS = sHat - (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size);
+    console.log("logging before converting them to binary");
+    console.log(validIds);
     validIds = convertSetToBinary(validIds);
     revokedIds = convertSetToBinary(revokedIds);
+    console.log("logging after converting them to binary");
+    console.log(validIds);
     drawNFromSet(validIds, revokedIds, neededR, true);
     drawNFromSet(validIds, revokedIds, neededS, false);
     var salted = generateRandom256BitString();
@@ -93,31 +99,6 @@ function constructBFC(validIds, revokedIds, rHat) {
         filter, salted
     ];
 }
-var validTestSet = new Set();
-for (var i = 1; i <= 100000; i++) {
-    var randomHex = '';
-    var hexLength = 64;
-    // Generate a 64-character (32-byte) hex value
-    for (var i_1 = 0; i_1 < hexLength / 8; i_1++) {
-        // Generate a random 8-character hex segment
-        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
-        randomHex += segment;
-    }
-    validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
-}
-var invalidTestSet = new Set();
-for (var i = 100000; i <= 300000; i++) {
-    var hexLength = 64; // Desired length of each hex value
-    var randomHex = '';
-    // Generate a 64-character (32-byte) hex value
-    for (var i_2 = 0; i_2 < hexLength / 8; i_2++) {
-        // Generate a random 8-character hex segment
-        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
-        randomHex += segment;
-    }
-    invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
-}
-var result = constructBFC(validTestSet, invalidTestSet, 100001);
 //console.log(result)
 function isInBFC(value, bfc) {
     for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
