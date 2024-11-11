@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
-const {BloomFilter} = require('bloom-filters')
+const {BloomFilter} = require('bloomfilter')
 import hex2Bin from 'hex-to-bin';
+const fs = require('fs');
 
 
 // type BloomFilterCascade = BloomFilter[];
@@ -60,6 +61,7 @@ export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, re
    let excludedSet = revokedIds
    let filter = []
    let cascadeLevel = 1;
+   let falsePositiveLastStep=0
    //Why is this falsepositive_last needed?
    while (includedSet.size > 0){
      const sizeInBit= (-1.0*includedSet.size*Math.log(cascadeLevel===1?pa:pb))/(Math.log(2)*Math.log(2))
@@ -72,7 +74,7 @@ export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, re
 
       let falsePositives = new Set<string>()
       excludedSet.forEach(id => {
-         if(currentFilter.has(id + cascadeLevel.toString(2).padStart(8, "0") + salted)){
+         if(currentFilter.test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)){
                     falsePositives.add(id)
                 }
      });
@@ -91,7 +93,7 @@ export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, re
 
 export function isInBFC(value:string, bfc:typeof BloomFilter[]): boolean {
   for(const bloomFilter of bfc){
-     if(bloomFilter.has(value)){
+     if(bloomFilter.test(value)){
           return true;
      }
   }
@@ -99,7 +101,7 @@ export function isInBFC(value:string, bfc:typeof BloomFilter[]): boolean {
 }
 
 export function serializeBloomFilterCascade(bfc:[typeof BloomFilter[], string]): string {
-   console.log("serialiying")
+   console.log("serializing")
    bfc[0].forEach(filter => {
       // Transform bloomFilterCascade to JSON format 
       filter.toJSON = function() {
@@ -140,6 +142,9 @@ function binaryStringToBuffer(binaryString: string): Buffer {
 
 export function toDataHexString(bfc:[typeof BloomFilter[], string]): string {
   const serializedCascade = bfc[0].map(filter => {
+   var array = [].slice.call(filter.buckets),
+   json = JSON.stringify(array);
+   console.log("logging json",json)
    // Create and fill the buffer with the filter content
    const currentFilterBuffer = Buffer.from(filter._filter.array);
   
@@ -208,5 +213,36 @@ export function deserializeBloomFilterCascade(serialized: string): [typeof Bloom
   }
   return [bloomFilters, salt];
  }
+ console.log("runnimg")
+ let validTestSet = new Set<string>();
+    for (let i = 1; i <= 100000; i++) {
+       let randomHex = '';
+       const hexLength = 64;
+           
+           // Generate a 64-character (32-byte) hex value
+           for (let i = 0; i < hexLength / 8; i++) {
+               // Generate a random 8-character hex segment
+               const segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+               randomHex += segment;
+           }
+       validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
+    }
+    let invalidTestSet = new Set<string>();
+    for (let i = 100000; i <= 300000; i++) {
+       const hexLength = 64; // Desired length of each hex value
+    
+           let randomHex = '';
+           
+           // Generate a 64-character (32-byte) hex value
+           for (let i = 0; i < hexLength / 8; i++) {
+               // Generate a random 8-character hex segment
+               const segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+               randomHex += segment;
+           }
+       invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
+    }
+    const result = constructBFC(validTestSet, invalidTestSet, 100001)
+    fs.writeFileSync('output.txt', toDataHexString(result), 'utf8');
 
- fromDataHexString(toDataHexString(result))
+
+   

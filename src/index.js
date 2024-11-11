@@ -9,8 +9,9 @@ exports.toDataHexString = toDataHexString;
 exports.deserializeBloomFilterCascade = deserializeBloomFilterCascade;
 exports.fromDataHexString = fromDataHexString;
 var crypto_1 = require("crypto");
-var BloomFilter = require('bloom-filters').BloomFilter;
+var BloomFilter = require('bloomfilter').BloomFilter;
 var hex_to_bin_1 = require("hex-to-bin");
+var fs = require('fs');
 // type BloomFilterCascade = BloomFilter[];
 function generateRandom256BitString() {
     var bytes = (0, crypto_1.randomBytes)(32);
@@ -18,18 +19,12 @@ function generateRandom256BitString() {
         .map(function (byte) { return byte.toString(2).padStart(8, '0'); })
         .join('');
 }
-// // imporant: numbers are to big and therefore we have not precise results if using this function. Use hex2Bin instead
-//  function convertHexToBinary(hex: string): string {
-//     return (parseInt(hex, 16).toString(2)).padStart(8, '0') 
-//  }
+// // important: numbers are to big and therefore we have not precise results if using this function. Use hex2Bin instead
 function convertSetToBinary(set) {
     var resultSet = new Set();
     set.forEach(function (id) {
         resultSet.add((0, hex_to_bin_1.default)(id));
     });
-    //for(let i=0;i<set.size;i++){// NOT WORKING
-    //    resultSet.add(convertHexToBinary(""))//TODO
-    //}
     return resultSet;
 }
 function drawNFromSet(validIds, revokedIds, neededIteration, addToValidIds) {
@@ -54,12 +49,8 @@ function constructBFC(validIds, revokedIds, rHat) {
     var sHat = 2 * rHat;
     var neededR = rHat - (validIds === null || validIds === void 0 ? void 0 : validIds.size);
     var neededS = sHat - (revokedIds === null || revokedIds === void 0 ? void 0 : revokedIds.size);
-    console.log("logging before converting them to binary");
-    console.log(validIds);
     validIds = convertSetToBinary(validIds);
     revokedIds = convertSetToBinary(revokedIds);
-    console.log("logging after converting them to binary");
-    console.log(validIds);
     drawNFromSet(validIds, revokedIds, neededR, true);
     drawNFromSet(validIds, revokedIds, neededS, false);
     var salted = generateRandom256BitString();
@@ -69,8 +60,7 @@ function constructBFC(validIds, revokedIds, rHat) {
     var excludedSet = revokedIds;
     var filter = [];
     var cascadeLevel = 1;
-    //Why is this falsepositive_last needed?
-    var falsepostive_last = 0;
+    var falsePositiveLastStep = 0;
     var _loop_1 = function () {
         var sizeInBit = (-1.0 * includedSet.size * Math.log(cascadeLevel === 1 ? pa : pb)) / (Math.log(2) * Math.log(2));
         console.log(sizeInBit);
@@ -81,7 +71,7 @@ function constructBFC(validIds, revokedIds, rHat) {
         filter.push(currentFilter);
         var falsePositives = new Set();
         excludedSet.forEach(function (id) {
-            if (currentFilter.has(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
+            if (currentFilter.test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
                 falsePositives.add(id);
             }
         });
@@ -89,8 +79,8 @@ function constructBFC(validIds, revokedIds, rHat) {
         excludedSet = includedSet;
         includedSet = falsePositives;
         cascadeLevel++;
-        falsepostive_last = falsePositives.size;
     };
+    //Why is this falsepositive_last needed?
     while (includedSet.size > 0) {
         _loop_1();
     }
@@ -103,13 +93,14 @@ function constructBFC(validIds, revokedIds, rHat) {
 function isInBFC(value, bfc) {
     for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
         var bloomFilter = bfc_1[_i];
-        if (bloomFilter.has(value)) {
+        if (bloomFilter.test(value)) {
             return true;
         }
     }
     return false;
 }
 function serializeBloomFilterCascade(bfc) {
+    console.log("serializing");
     bfc[0].forEach(function (filter) {
         // Transform bloomFilterCascade to JSON format 
         filter.toJSON = function () {
@@ -142,6 +133,8 @@ function binaryStringToBuffer(binaryString) {
 }
 function toDataHexString(bfc) {
     var serializedCascade = bfc[0].map(function (filter) {
+        var array = [].slice.call(filter.buckets), json = JSON.stringify(array);
+        console.log("logging json", json);
         // Create and fill the buffer with the filter content
         var currentFilterBuffer = Buffer.from(filter._filter.array);
         // Allocate 4 Bytes for lengthPrefix. The more items we have, the bigger the length would be
@@ -194,4 +187,30 @@ function fromDataHexString(serialized) {
     }
     return [bloomFilters, salt];
 }
-fromDataHexString(toDataHexString(result));
+console.log("runnimg");
+var validTestSet = new Set();
+for (var i = 1; i <= 100000; i++) {
+    var randomHex = '';
+    var hexLength = 64;
+    // Generate a 64-character (32-byte) hex value
+    for (var i_1 = 0; i_1 < hexLength / 8; i_1++) {
+        // Generate a random 8-character hex segment
+        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+        randomHex += segment;
+    }
+    validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
+}
+var invalidTestSet = new Set();
+for (var i = 100000; i <= 300000; i++) {
+    var hexLength = 64; // Desired length of each hex value
+    var randomHex = '';
+    // Generate a 64-character (32-byte) hex value
+    for (var i_2 = 0; i_2 < hexLength / 8; i_2++) {
+        // Generate a random 8-character hex segment
+        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+        randomHex += segment;
+    }
+    invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
+}
+var result = constructBFC(validTestSet, invalidTestSet, 100001);
+fs.writeFileSync('output.txt', toDataHexString(result), 'utf8');
