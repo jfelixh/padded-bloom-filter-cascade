@@ -1,10 +1,7 @@
 import { randomBytes } from 'crypto';
-const {BloomFilter} = require('bloomfilter')
+import { BloomFilter } from 'bloomfilter';
 import hex2Bin from 'hex-to-bin';
-const fs = require('fs');
-
-
-// type BloomFilterCascade = BloomFilter[];
+import * as fs from 'fs';
  
 function generateRandom256BitString(): string { 
      const bytes = randomBytes(32);
@@ -13,8 +10,7 @@ function generateRandom256BitString(): string {
         .join('');
  }
 
- // // important: numbers are to big and therefore we have not precise results if using this function. Use hex2Bin instead
-
+// important: numbers are to big and therefore we have not precise results. Use hex2Bin instead
  export function convertSetToBinary(set: Set<string>): Set<string> {
      const resultSet = new Set<string>()
      set.forEach(id => {
@@ -36,7 +32,7 @@ function generateRandom256BitString(): string {
        }
     }
  }
-export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, revokedIds: Set<string>, rHat: number): [typeof BloomFilter[], string] {
+export function constructBFC(validIds: Set<string>, revokedIds: Set<string>, rHat: number): [BloomFilter[], string] {
     if(validIds?.size > rHat || revokedIds?.size > 2*rHat){
       console.log("Error: Requirements not fulfilled. Returning empty array")
       return [[], "0"]
@@ -59,10 +55,8 @@ export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, re
 
    let includedSet = validIds
    let excludedSet = revokedIds
-   let filter = []
+   let filter: BloomFilter[] = []
    let cascadeLevel = 1;
-   let falsePositiveLastStep=0
-   //Why is this falsepositive_last needed?
    while (includedSet.size > 0){
      const sizeInBit= (-1.0*includedSet.size*Math.log(cascadeLevel===1?pa:pb))/(Math.log(2)*Math.log(2))
      console.log(sizeInBit)
@@ -89,9 +83,7 @@ export function constructBFC(this: typeof BloomFilter, validIds: Set<string>, re
    ]
 }
 
-//console.log(result)
-
-export function isInBFC(value:string, bfc:typeof BloomFilter[]): boolean {
+export function isInBFC(value:string, bfc:BloomFilter[]): boolean {
   for(const bloomFilter of bfc){
      if(bloomFilter.test(value)){
           return true;
@@ -100,30 +92,30 @@ export function isInBFC(value:string, bfc:typeof BloomFilter[]): boolean {
   return false;
 }
 
-export function serializeBloomFilterCascade(bfc:[typeof BloomFilter[], string]): string {
-   console.log("serializing")
-   bfc[0].forEach(filter => {
-      // Transform bloomFilterCascade to JSON format 
-      filter.toJSON = function() {
+// export function serializeBloomFilterCascade(bfc:[BloomFilter[], string]): string {
+//    console.log("serializing")
+//    bfc[0].forEach(filter => {
+//       // Transform bloomFilterCascade to JSON format 
+//       filter.toJSON = function() {
       
-    // Convert each element of _filter.array to an 8-bit binary string
-    const binaryContent = Object.values(filter._filter.array as number[]).map((byte: number) => byte.toString(2).padStart(8, '0'));
+//     // Convert each element of _filter.array to an 8-bit binary string
+//     const binaryContent = Object.values(filter._filter.array as number[]).map((byte: number) => byte.toString(2).padStart(8, '0'));
 
-    // The JSON for each filter should contain only the size and the bits in the filter
-          return {
-              filter: {
-               size: this._filter.size,
-               content: binaryContent
-              }
-          };
-      };
-  });
+//     // The JSON for each filter should contain only the size and the bits in the filter
+//           return {
+//               filter: {
+//                size: this._filter.size,
+//                content: binaryContent
+//               }
+//           };
+//       };
+//   });
 
-   // The serialized object at the end should contain the size of BloomFilterCascade, the salt, and every bloomFilter
-   // JSON is a better approach then byte[] because we dont need to use length encoding
-   const serializedArray = JSON.stringify({sizeBloomFilterCascade: bfc[0].length, salt: bfc[1], bloomFilters: bfc[0]});  
- return serializedArray 
-}
+//    // The serialized object at the end should contain the size of BloomFilterCascade, the salt, and every bloomFilter
+//    // JSON is a better approach then byte[] because we dont need to use length encoding
+//    const serializedArray = JSON.stringify({sizeBloomFilterCascade: bfc[0].length, salt: bfc[1], bloomFilters: bfc[0]});  
+//  return serializedArray 
+// }
 
 function binaryStringToBuffer(binaryString: string): Buffer {
    const byteArray = [];
@@ -140,14 +132,14 @@ function binaryStringToBuffer(binaryString: string): Buffer {
    return Buffer.from(byteArray); 
 }
 
-export function toDataHexString(bfc:[typeof BloomFilter[], string]): string {
+export function toDataHexString(bfc:[BloomFilter[], string]): string {
   const serializedCascade = bfc[0].map(filter => {
-   var array = [].slice.call(filter.buckets),
-   json = JSON.stringify(array);
-   console.log("logging json",json)
+   // Serialization from npm documentation
+   var array = [].slice.call(filter.buckets)
+   
    // Create and fill the buffer with the filter content
-   const currentFilterBuffer = Buffer.from(filter._filter.array);
-  
+   const currentFilterBuffer = Buffer.from(filter.buckets.buffer);
+   
    // Allocate 4 Bytes for lengthPrefix. The more items we have, the bigger the length would be
    const lengthPrefix = Buffer.alloc(4);  
    lengthPrefix.writeUInt32BE(currentFilterBuffer.length, 0);  // Store the length in the Buffer using big endian
@@ -165,34 +157,32 @@ export function toDataHexString(bfc:[typeof BloomFilter[], string]): string {
  return `0x${serializedArray.toString('hex')}`
 }
 
-export function deserializeBloomFilterCascade(serialized: string): [typeof BloomFilter[], string] {
-   // Transform JSON to object
-   const parsedData = JSON.parse(serialized);
+// export function deserializeBloomFilterCascade(serialized: string): [BloomFilter[], string] {
+//    // Transform JSON to object
+//    const parsedData = JSON.parse(serialized);
    
-   // Transform each value of the bloom filter to decimal (see serialization method for more info)
-   const bloomFilters = parsedData.bloomFilters.map((filterData: any) => {
-     const byteArray = filterData.filter.content.map((binaryString: string) => parseInt(binaryString, 2));
+//    // Transform each value of the bloom filter to decimal (see serialization method for more info)
+//    const bloomFilters = parsedData.bloomFilters.map((filterData: any) => {
+//      const byteArray = filterData.filter.content.map((binaryString: string) => parseInt(binaryString, 2));
  
-     // Create a new filter with the decimal data 
-     const filter = new BloomFilter(filterData.filter.size); 
-     filter._filter.array = byteArray; 
+//      // Create a new filter with the decimal data 
+//      const filter = new BloomFilter(filterData.filter.size); 
+//      filter._filter.array = byteArray; 
  
-     return filter;
-   });
-   return [bloomFilters, parsedData.salt];
- }
+//      return filter;
+//    });
+//    return [bloomFilters, parsedData.salt];
+//  }
 
-
-
- export function fromDataHexString(serialized: string): [typeof BloomFilter[], string] {
+ export function fromDataHexString(serialized: string): [BloomFilter[], string] {
    // Create a buffer from the string hex value by first removing 0x
    const buffer = Buffer.from(serialized.slice(2), 'hex');
-
+  
   // Extract the salt - the first 32 bytes
   const saltBuffer = buffer.subarray(0, 32);
   const salt = Array.from(saltBuffer).map(byte => byte.toString(2).padStart(8, '0')).join('')
   
-  const bloomFilters: typeof BloomFilter[] = [];
+  const bloomFilters: BloomFilter[] = [];
 
   let startIndex = 32
   while (startIndex < buffer.length) {
@@ -205,15 +195,16 @@ export function deserializeBloomFilterCascade(serialized: string): [typeof Bloom
     startIndex += lengthPrefix;
 
     
-    // Create a new bloom filter of size in bits and store the filter content
-    const currentFilter = new BloomFilter(filterContent.length * 8)
-    currentFilter._filter.array = Array.from(filterContent)
+    // Create a new bloom filter of size in bits and number of hash functions and store the filter content
+    const currentFilter = new BloomFilter(filterContent.length * 8, 1)
+    // Buckets is of type Int32Array, so we have to convert the buffer back to Int32Array
+    currentFilter.buckets =new Int32Array(filterContent.buffer,  filterContent.byteOffset, filterContent.byteLength / Int32Array.BYTES_PER_ELEMENT)
 
     bloomFilters.push(currentFilter);
   }
   return [bloomFilters, salt];
  }
- console.log("runnimg")
+ 
  let validTestSet = new Set<string>();
     for (let i = 1; i <= 100000; i++) {
        let randomHex = '';
@@ -242,6 +233,7 @@ export function deserializeBloomFilterCascade(serialized: string): [typeof Bloom
        invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
     }
     const result = constructBFC(validTestSet, invalidTestSet, 100001)
+    //fromDataHexString(toDataHexString(result))
     fs.writeFileSync('output.txt', toDataHexString(result), 'utf8');
 
 
