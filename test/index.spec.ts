@@ -1,10 +1,7 @@
 import { BloomFilter } from "bloomfilter";
-import { serialize } from "v8";
-import { deserializeBloomFilterCascade, serializeBloomFilterCascade } from ".";
-import * as fs from 'fs';
-import exp from "constants";
+import { fromDataHexString, toDataHexString } from "../src";
 
-const methods = require('./index');
+const methods = require('../src/index');
 
 let validTestSet = new Set<string>();
     for (let i = 1; i <= 1000; i++) {
@@ -118,7 +115,7 @@ test('if second layer of bloom filter is implemented correctly',()=>{
 
     test('serialized the bloomfilter correctly', () => {
     //fs.writeFileSync('output.txt', serializeBloomFilterCascade(result), 'utf8');
-    const deserializedResult=deserializeBloomFilterCascade(serializeBloomFilterCascade(result))
+    const deserializedResult=fromDataHexString(toDataHexString(result))
     expect(result[1]).toBe(deserializedResult[1])
     expect(result[0]).toBe(deserializedResult[0])
     expect(result).toBe(deserializedResult)
