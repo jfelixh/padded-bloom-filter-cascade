@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { BloomFilter } from 'my-forked-bloomfilter';
+const { BloomFilter } = require('./my-forked-bloomfilter');
 import hex2Bin from 'hex-to-bin';
 import * as fs from 'fs';
  
