@@ -1,7 +1,6 @@
 import { randomBytes } from 'crypto';
 const { BloomFilter } = require('./my-forked-bloomfilter');
 import hex2Bin from 'hex-to-bin';
-import * as fs from 'fs';
  
 function generateRandom256BitString(): string { 
      const bytes = randomBytes(32);

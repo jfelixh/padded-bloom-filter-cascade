@@ -1,4 +1,4 @@
-import { BloomFilter } from "../src/my-forked-bloomfilter/bloomfilter";
+import { BloomFilter } from "my-forked-bloomfilter";
 import { fromDataHexString, isInBFC, toDataHexString } from "../src";
 
 const methods = require('../src/index');
@@ -44,7 +44,7 @@ test('convert set to binary',() => {
 
 test('if first layer of bloom filter is implemented correctly',()=>{
 const filter=result[0]
-const firstLayer: BloomFilter= filter[0]
+const firstLayer:BloomFilter= filter[0]
 const validTestSetFirst:Set<string> = methods.convertSetToBinary(validTestSet)
 
 validTestSetFirst.forEach(id=>{
@@ -58,8 +58,8 @@ validTestSetFirst.forEach(id=>{
 
 test('if second layer of bloom filter is implemented correctly',()=>{
     const filter=result[0]
-    const firstLayer: BloomFilter= filter[0]
-    const secondLayer: BloomFilter= filter[1]
+    const firstLayer:BloomFilter= filter[0]
+    const secondLayer:BloomFilter= filter[1]
     let invalidTestSetFirst:Set<string>=methods.convertSetToBinary(invalidTestSet)
     let falsePositives = new Set<string>()
     invalidTestSetFirst.forEach(id=>{

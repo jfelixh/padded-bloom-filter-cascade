@@ -7,7 +7,7 @@ exports.isInBFC = isInBFC;
 exports.toDataHexString = toDataHexString;
 exports.fromDataHexString = fromDataHexString;
 var crypto_1 = require("crypto");
-var my_forked_bloomfilter_1 = require("my-forked-bloomfilter");
+var BloomFilter = require('./my-forked-bloomfilter').BloomFilter;
 var hex_to_bin_1 = require("hex-to-bin");
 function generateRandom256BitString() {
     var bytes = (0, crypto_1.randomBytes)(32);
@@ -59,7 +59,7 @@ function constructBFC(validIds, revokedIds, rHat) {
     var _loop_1 = function () {
         var sizeInBit = (-1.0 * includedSet.size * Math.log(cascadeLevel === 1 ? pa : pb)) / (Math.log(2) * Math.log(2));
         console.log(sizeInBit);
-        var currentFilter = new my_forked_bloomfilter_1.BloomFilter(sizeInBit, 1);
+        var currentFilter = new BloomFilter(sizeInBit, 1);
         includedSet.forEach(function (id) {
             currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted); //we interprete cascadeLevel as 8bit
         });
@@ -175,7 +175,7 @@ function fromDataHexString(serialized) {
         var filterContent = buffer.subarray(startIndex, startIndex + lengthPrefix);
         startIndex += lengthPrefix;
         // Create a new bloom filter of size in bits and number of hash functions and store the filter content
-        var currentFilter = new my_forked_bloomfilter_1.BloomFilter(filterContent.length * 8, 1);
+        var currentFilter = new BloomFilter(filterContent.length * 8, 1);
         // Buckets is of type Int32Array, so we have to convert the buffer back to Int32Array
         currentFilter.buckets = new Int32Array(filterContent.buffer, filterContent.byteOffset, filterContent.byteLength / Int32Array.BYTES_PER_ELEMENT);
         bloomFilters.push(currentFilter);
