@@ -7,9 +7,8 @@ exports.isInBFC = isInBFC;
 exports.toDataHexString = toDataHexString;
 exports.fromDataHexString = fromDataHexString;
 var crypto_1 = require("crypto");
-var bloomfilter_1 = require("bloomfilter");
+var BloomFilter = require('./my-forked-bloomfilter').BloomFilter;
 var hex_to_bin_1 = require("hex-to-bin");
-var fs = require("fs");
 function generateRandom256BitString() {
     var bytes = (0, crypto_1.randomBytes)(32);
     return Array.from(bytes)
@@ -60,7 +59,7 @@ function constructBFC(validIds, revokedIds, rHat) {
     var _loop_1 = function () {
         var sizeInBit = (-1.0 * includedSet.size * Math.log(cascadeLevel === 1 ? pa : pb)) / (Math.log(2) * Math.log(2));
         console.log(sizeInBit);
-        var currentFilter = new bloomfilter_1.BloomFilter(sizeInBit, 1);
+        var currentFilter = new BloomFilter(sizeInBit, 1);
         includedSet.forEach(function (id) {
             currentFilter.add(id + cascadeLevel.toString(2).padStart(8, "0") + salted); //we interprete cascadeLevel as 8bit
         });
@@ -71,7 +70,6 @@ function constructBFC(validIds, revokedIds, rHat) {
                 falsePositives.add(id);
             }
         });
-        console.log("false positive", falsePositives.size);
         excludedSet = includedSet;
         includedSet = falsePositives;
         cascadeLevel++;
@@ -79,19 +77,20 @@ function constructBFC(validIds, revokedIds, rHat) {
     while (includedSet.size > 0) {
         _loop_1();
     }
-    console.log([filter, salted]);
     return [
         filter, salted
     ];
 }
-function isInBFC(value, bfc) {
-    for (var _i = 0, bfc_1 = bfc; _i < bfc_1.length; _i++) {
-        var bloomFilter = bfc_1[_i];
-        if (bloomFilter.test(value)) {
-            return true;
+function isInBFC(value, bfc, salted) {
+    var cascadeLevel = 0;
+    var id = (0, hex_to_bin_1.default)(value);
+    for (var i = 0; i < bfc.length; i++) {
+        cascadeLevel++;
+        if (!bfc[i].test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
+            return cascadeLevel % 2 === 0;
         }
     }
-    return false;
+    return !(cascadeLevel % 2 === 0);
 }
 // export function serializeBloomFilterCascade(bfc:[BloomFilter[], string]): string {
 //    console.log("serializing")
@@ -130,7 +129,8 @@ function toDataHexString(bfc) {
         // Serialization from npm documentation
         var array = [].slice.call(filter.buckets);
         // Create and fill the buffer with the filter content
-        var currentFilterBuffer = Buffer.from(filter.buckets.buffer);
+        var buffer = (filter.buckets instanceof Int32Array) ? filter.buckets.buffer : null;
+        var currentFilterBuffer = Buffer.from(buffer);
         // Allocate 4 Bytes for lengthPrefix. The more items we have, the bigger the length would be
         var lengthPrefix = Buffer.alloc(4);
         lengthPrefix.writeUInt32BE(currentFilterBuffer.length, 0); // Store the length in the Buffer using big endian
@@ -175,37 +175,51 @@ function fromDataHexString(serialized) {
         var filterContent = buffer.subarray(startIndex, startIndex + lengthPrefix);
         startIndex += lengthPrefix;
         // Create a new bloom filter of size in bits and number of hash functions and store the filter content
-        var currentFilter = new bloomfilter_1.BloomFilter(filterContent.length * 8, 1);
+        var currentFilter = new BloomFilter(filterContent.length * 8, 1);
         // Buckets is of type Int32Array, so we have to convert the buffer back to Int32Array
         currentFilter.buckets = new Int32Array(filterContent.buffer, filterContent.byteOffset, filterContent.byteLength / Int32Array.BYTES_PER_ELEMENT);
+        var array = void 0;
+        var kbuffer = void 0;
+        var kbytes = 1 << Math.ceil(Math.log(Math.ceil(Math.log(currentFilter.m) / Math.LN2 / 8)) / Math.LN2);
+        if (kbytes === 1) {
+            array = Uint8Array;
+        }
+        else if (kbytes === 2) {
+            array = Uint16Array;
+        }
+        else {
+            array = Uint32Array;
+        }
+        kbuffer = new ArrayBuffer(kbytes * 1);
+        currentFilter._locations = new array(kbuffer);
         bloomFilters.push(currentFilter);
     }
     return [bloomFilters, salt];
 }
-var validTestSet = new Set();
-for (var i = 1; i <= 100000; i++) {
-    var randomHex = '';
-    var hexLength = 64;
-    // Generate a 64-character (32-byte) hex value
-    for (var i_1 = 0; i_1 < hexLength / 8; i_1++) {
-        // Generate a random 8-character hex segment
-        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
-        randomHex += segment;
-    }
-    validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
-}
-var invalidTestSet = new Set();
-for (var i = 100000; i <= 300000; i++) {
-    var hexLength = 64; // Desired length of each hex value
-    var randomHex = '';
-    // Generate a 64-character (32-byte) hex value
-    for (var i_2 = 0; i_2 < hexLength / 8; i_2++) {
-        // Generate a random 8-character hex segment
-        var segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
-        randomHex += segment;
-    }
-    invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
-}
-var result = constructBFC(validTestSet, invalidTestSet, 100001);
-//fromDataHexString(toDataHexString(result))
-fs.writeFileSync('output.txt', toDataHexString(result), 'utf8');
+//  let validTestSet = new Set<string>();
+//     for (let i = 1; i <= 100000; i++) {
+//        let randomHex = '';
+//        const hexLength = 64;
+//            // Generate a 64-character (32-byte) hex value
+//            for (let i = 0; i < hexLength / 8; i++) {
+//                // Generate a random 8-character hex segment
+//                const segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+//                randomHex += segment;
+//            }
+//        validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
+//     }
+//     let invalidTestSet = new Set<string>();
+//     for (let i = 100000; i <= 300000; i++) {
+//        const hexLength = 64; // Desired length of each hex value
+//            let randomHex = '';
+//            // Generate a 64-character (32-byte) hex value
+//            for (let i = 0; i < hexLength / 8; i++) {
+//                // Generate a random 8-character hex segment
+//                const segment = Math.floor((Math.random() * 0xFFFFFFFF)).toString(16).padStart(8, '0');
+//                randomHex += segment;
+//            }
+//        invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
+//     }
+//     const result = constructBFC(validTestSet, invalidTestSet, 100001)
+//     //fromDataHexString(toDataHexString(result))
+//     fs.writeFileSync('output.txt', toDataHexString(result), 'utf8');
