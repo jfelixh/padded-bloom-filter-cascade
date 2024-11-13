@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-const { BloomFilter } = require('./my-forked-bloomfilter');
+import { BloomFilter } from 'my-forked-bloomfilter';
 import hex2Bin from 'hex-to-bin';
 import * as fs from 'fs';
  
@@ -201,19 +201,6 @@ export function toDataHexString(bfc:[typeof BloomFilter[], string]): string {
     const currentFilter = new BloomFilter(filterContent.length * 8, 1)
     // Buckets is of type Int32Array, so we have to convert the buffer back to Int32Array
     currentFilter.buckets =new Int32Array(filterContent.buffer,  filterContent.byteOffset, filterContent.byteLength / Int32Array.BYTES_PER_ELEMENT)
-    let array: Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor;
-
-   let kbuffer: ArrayBuffer;
-   let kbytes: number = 1 << Math.ceil(Math.log(Math.ceil(Math.log(currentFilter.m) / Math.LN2 / 8)) / Math.LN2);
-   if (kbytes === 1) {
-   array = Uint8Array;
-   } else if (kbytes === 2) {
-   array = Uint16Array;
-   } else {
-   array = Uint32Array;
-   }
-   kbuffer = new ArrayBuffer(kbytes * 1);
-   currentFilter._locations = new array(kbuffer);
    bloomFilters.push(currentFilter);
   }
   return [bloomFilters, salt];

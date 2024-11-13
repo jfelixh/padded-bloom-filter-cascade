@@ -1,4 +1,4 @@
-const { BloomFilter } = require('../src/my-forked-bloomfilter');
+import { BloomFilter } from "../src/my-forked-bloomfilter/bloomfilter";
 import { fromDataHexString, isInBFC, toDataHexString } from "../src";
 
 const methods = require('../src/index');
