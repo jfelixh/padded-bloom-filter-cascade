@@ -109,5 +109,5 @@
   },
   "include": [
     "src/**/*"
-  ]
+, "src/forked-bloomfilter/bloomfilter.js/index.d.ts", "src/forked-bloomfilter/bloomfilter.js/test", "src/forked-bloomfilter/bloomfilter.js/bloomfilter.js", "src/forked-bloomfilter/bloomfilter.js"  ]
 }
