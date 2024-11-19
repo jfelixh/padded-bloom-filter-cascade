@@ -1,5 +1,5 @@
 import hex2Bin from "hex-to-bin";
-import { BloomFilter } from "../forked-bloomfilter";
+import { BloomFilter } from "../../bloomfilter-sha256";
 import {
   binaryStringToBuffer,
   convertSetToBinary,
