@@ -130,3 +130,6 @@ dist
 .pnp.*
 
 output.txt
+
+# IntelliJ
+.idea/

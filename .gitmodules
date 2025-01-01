@@ -1,3 +1,3 @@
-[submodule "src/forked-bloomfilter"]
-	path = src/forked-bloomfilter
-	url = ./src/forked-bloomfilter
+[submodule "bloomfilter-sha256"]
+	path = bloomfilter-sha256
+	url = https://github.com/chan9908181/bloomfilter-sha256.git
