@@ -8,10 +8,9 @@ To set up the project, you need to install the required npm packages. Run the fo
 npm install
 ```
 ## Cloning the submodule
-Navigate to the bloomfilter-sha256 directory and clone the bloomfilter submodule, which uses SHA-256 as the hash function with this command in terminal.```
+
 ```
-cd bloomfilter-sha256
-git clone https://github.com/chan9908181/bloomfilter.js.git .
+git submodule update --init --recursive --remote
 ```
 
 ## Testing the Implementation Bloom Filter
