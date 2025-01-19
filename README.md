@@ -1,22 +1,35 @@
 # padded-bloom-filter-cascade
-An implementation of a Bloom Filter Cascade with padding. This project is built using TypeScript and relies on npm packages, including a forked version of the bloomfilter library *bloomfilter-sha256*, which is included as a submodule.
 
-## Installing Dependencies
+This project implements a padded Bloom Filter Cascade, based on the [*bloomfilter-sha256*](https://github.com/jfelixh/bloomfilter-sha256) library. It provides utility functions to construct, reconstruct, and verify the presence of elements within the Bloom Filter Cascade.
 
-To set up the project, you need to install the required npm packages. Run the following command in the project root directory:
-```
-npm install
-```
-## Cloning the submodule
-Navigate to the bloomfilter-sha256 directory and clone the bloomfilter submodule, which uses SHA-256 as the hash function with this command in terminal.```
-```
-cd bloomfilter-sha256
-git clone https://github.com/chan9908181/bloomfilter.js.git .
+## Usage
+```typescript
+import { constructBFC, fromDataHexString, isInBFC, toDataHexString } from 'padded-bloom-filter-cascade';
+
+const element: string = '...'; // Element to check later on if it is in the Bloom Filter Cascade
+
+// Construct a Bloom Filter Cascade
+const validElements: Set<string> = new Set([element, '...', '...']); // Set of valid elements
+const invalidElements: Set<string> = new Set(['...', '...', '...']); // Set of invalid elements
+const rHat: number = x // Padding size x, where rHat >= |validElements|
+const constructedBFC = constructBFC(validElements, invalidElements, rHat); // returns [filter, salt]
+
+console.log(constructedBFC[0]); // Constructed Bloom Filter Cascade
+
+// Check if an element is in the Bloom Filter Cascade
+const filterHexString = toDataHexString(constructedBFC); // Hexadecimal string representing the Bloom Filter Cascade
+const [filter, salt] = fromDataHexString(filterHexString); // Reconstruct the Bloom Filter Cascade from the hexadecimal string
+
+const result = isInBFC(filter, salt, element);
+
+console.log(result); // true if the element is in the Bloom Filter Cascade, false otherwise
 ```
 
-## Testing the Implementation Bloom Filter
-
-To verify that the Bloom Filter implementation works correctly, run the following command in the root directory:
+## Testing the Bloom Filter
+To verify that the Bloom Filter implementation works as expected, run the following command in the root directory:
 ```
 npm test
 ```
+
+## Links
+<!-- TODO: insert link to Felix's paper-->

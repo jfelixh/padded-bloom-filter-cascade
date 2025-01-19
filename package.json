@@ -8,12 +8,11 @@
     "typescript": "^5.6.3"
   },
   "scripts": {
-    "build": "tsc src/index.ts",
-    "start": "node src/index.js",
+    "build": "tsc --outDir dist src/index.ts",
     "test": "jest"
   },
   "dependencies": {
-    "bloomfilter": "file:./src/forked-bloomfilter",
+    "bloomfilter": "github:jfelixh/bloomfilter-sha256",
     "hex-to-bin": "^1.0.1"
   }
 }
