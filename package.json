@@ -1,4 +1,22 @@
 {
+  "name": "padded-bloom-filter-cascade",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Padded Bloom Filter Cascade implementation based on bloomfilter-sha256.",
+  "type": "module",
+  "keywords": [
+    "bloom filter cascade"
+  ],
+  "homepage": "https://github.com/jfelixh/padded-bloom-filter-cascade",
+  "author": {
+    "name": "Felix Hoops",
+    "url": "https://github.com/jfelixh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jfelixh/padded-bloom-filter-cascade.git"
+  },
+  "main": "index.ts",
   "devDependencies": {
     "@types/bloomfilter": "^0.0.2",
     "@types/jest": "^29.5.14",
