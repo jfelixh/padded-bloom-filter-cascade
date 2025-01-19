@@ -7,6 +7,7 @@
   "keywords": [
     "bloom filter cascade"
   ],
+  "types": "index.d.ts",
   "homepage": "https://github.com/jfelixh/padded-bloom-filter-cascade",
   "author": {
     "name": "Felix Hoops",
@@ -31,6 +32,7 @@
   },
   "dependencies": {
     "bloomfilter": "github:jfelixh/bloomfilter-sha256",
-    "hex-to-bin": "^1.0.1"
+    "hex-to-bin": "^1.0.1",
+    "ts-node": "^10.9.2"
   }
 }
