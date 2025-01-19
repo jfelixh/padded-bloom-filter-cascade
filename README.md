@@ -1,6 +1,6 @@
 # padded-bloom-filter-cascade
 
-An implementation of a Bloom Filter Cascade with padding based on a forked version of the [*bloomfilter-sha256*](https://github.com/jfelixh/bloomfilter-sha256) library. Includes utility functions for constructing and checking whether a given element is in the Bloom Filter Cascade.
+This project implements a padded Bloom Filter Cascade, based on the [*bloomfilter-sha256*](https://github.com/jfelixh/bloomfilter-sha256) library. It provides utility functions to construct, reconstruct, and verify the presence of elements within the Bloom Filter Cascade.
 
 ## Usage
 ```typescript
