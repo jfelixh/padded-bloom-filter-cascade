@@ -17,7 +17,7 @@
     "type": "git",
     "url": "https://github.com/jfelixh/padded-bloom-filter-cascade.git"
   },
-  "main": "index.ts",
+  "main": "src/index.ts",
   "devDependencies": {
     "@types/bloomfilter": "^0.0.2",
     "@types/jest": "^29.5.14",
