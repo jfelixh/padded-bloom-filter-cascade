@@ -53,34 +53,34 @@ test("convert set to binary", () => {
 
 test("if first layer of bloom filter is implemented correctly", () => {
   const filter = result[0];
-  const firstLayer: BloomFilter = filter[0];
+  const firstLayer = filter[0];
   const validTestSetFirst: Set<string> = convertSetToBinary(validTestSet);
 
   validTestSetFirst.forEach((id) => {
     let cascadeLevel = 1;
     id = id + cascadeLevel.toString(2).padStart(8, "0") + result[1];
-    expect(firstLayer.test(id)).toBe(true);
+    expect(firstLayer?.test(id)).toBe(true);
     // expect(isInBFC(id,result[0],result[1])).toBe(true)
   });
 });
 
 test("if second layer of bloom filter is implemented correctly", () => {
   const filter = result[0];
-  const firstLayer: BloomFilter = filter[0];
-  const secondLayer: BloomFilter = filter[1];
+  const firstLayer = filter[0];
+  const secondLayer = filter[1];
   let invalidTestSetFirst: Set<string> = convertSetToBinary(invalidTestSet);
   let falsePositives = new Set<string>();
   invalidTestSetFirst.forEach((id) => {
     let cascadeLevel = 1;
     const id_test = id + cascadeLevel.toString(2).padStart(8, "0") + result[1];
-    if (firstLayer.test(id_test)) {
+    if (firstLayer?.test(id_test)) {
       falsePositives.add(id);
     }
   });
   falsePositives.forEach((id) => {
     let cascadeLevel = 2;
     expect(
-      secondLayer.test(
+      secondLayer?.test(
         id + cascadeLevel.toString(2).padStart(8, "0") + result[1]
       )
     ).toBe(true);
@@ -141,7 +141,9 @@ test("if the invalid VC is in the BLoomfilter with the correct implementation of
 test("serialized the bloomfilter correctly", () => {
   const deserializedResult = fromDataHexString(toDataHexString(result));
   for (let i = 0; i < deserializedResult[0].length; i++) {
-    deserializedResult[0][i]._locations = result[0][i]._locations;
+    (deserializedResult[0][i] as BloomFilter)._locations = (
+      result[0][i] as BloomFilter
+    )._locations;
   }
   expect(result[1]).toStrictEqual(deserializedResult[1]);
   expect(result[0]).toStrictEqual(deserializedResult[0]);

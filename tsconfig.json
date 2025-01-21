@@ -1,13 +1,29 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "lib": ["dom", "es2020"],
-    "module": "commonjs",
-    "removeComments": false,
+    /* Base Options: */
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true,
+
+    /* Strictness */
     "strict": true,
-    "skipLibCheck": true
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    /* Transpile with TS */
+    "module": "CommonJS",
+    "outDir": "dist",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "removeComments": false
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*.ts", "./rollup.config.js"],
+  "exclude": ["node_modules"]
 }
