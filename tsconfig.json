@@ -4,6 +4,7 @@
     "module": "esnext",
     "lib": ["es2018"],
     "declaration": true,
+    "removeComments": false,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist/esm",
