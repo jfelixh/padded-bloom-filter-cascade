@@ -16,8 +16,8 @@
     "type": "git",
     "url": "https://github.com/jfelixh/padded-bloom-filter-cascade.git"
   },
-  "main": "dist/index.js",
-  "types": "dist/bundle.d.ts",
+  "main": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
