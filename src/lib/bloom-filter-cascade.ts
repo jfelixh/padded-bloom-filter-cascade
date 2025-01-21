@@ -99,7 +99,9 @@ export function isInBFC(
   let id = hex2Bin(value);
   for (let i = 0; i < bfc.length; i++) {
     cascadeLevel++;
-    if (!bfc[i].test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)) {
+    if (
+      !bfc[i]?.test(id + cascadeLevel.toString(2).padStart(8, "0") + salted)
+    ) {
       return cascadeLevel % 2 === 0;
     }
   }
