@@ -19,8 +19,7 @@
   "main": "dist/esm/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "exports": {
     ".": {
@@ -29,7 +28,7 @@
     }
   },
   "scripts": {
-    "build": "npm run clean && rollup -c rollup.config.mjs",
+    "build": "rollup -c rollup.config.mjs",
     "dev": "rollup -c rollup.config.mjs -w",
     "clean": "rimraf dist",
     "test": "jest",

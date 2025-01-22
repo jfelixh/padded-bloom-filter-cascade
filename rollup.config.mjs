@@ -8,7 +8,7 @@ const config = [
   {
     input: "src/index.ts",
     output: {
-      dir: "dist",
+      dir: "dist/esm",
       format: "esm",
       sourcemap: true,
       preserveModules: true,
@@ -17,10 +17,6 @@ const config = [
     plugins: [
       typescript({
         tsconfig: "./tsconfig.json",
-        declaration: true,
-        declarationDir: "dist/types",
-        sourceMap: true,
-        inlineSources: true,
       }),
       resolve({
         preferBuiltins: true,
@@ -32,10 +28,8 @@ const config = [
   {
     input: "src/index.ts",
     output: {
-      dir: "dist/types",
+      file: "dist/index.d.ts",
       format: "esm",
-      preserveModules: true,
-      preserveModulesRoot: "src",
     },
     plugins: [
       dts({
