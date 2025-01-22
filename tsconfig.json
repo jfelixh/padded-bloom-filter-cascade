@@ -1,29 +1,20 @@
 {
   "compilerOptions": {
-    /* Base Options: */
+    "target": "es2018",
+    "module": "esnext",
+    "lib": ["es2018"],
+    "declaration": true,
+    "removeComments": false,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist/esm",
+    "rootDir": "./src",
+    "strict": true,
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "target": "es2022",
-    "allowJs": true,
-    "resolveJsonModule": true,
-    "moduleDetection": "force",
-    "isolatedModules": true,
-    "allowImportingTsExtensions": true,
-    "emitDeclarationOnly": true,
-
-    /* Strictness */
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-
-    /* Transpile with TS */
-    "module": "CommonJS",
-    "outDir": "dist",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "removeComments": false
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "./rollup.config.js"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
