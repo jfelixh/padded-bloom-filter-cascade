@@ -31,7 +31,14 @@ const config = [
       file: "dist/index.d.ts",
       format: "esm",
     },
-    plugins: [dts()],
+    plugins: [
+      dts({
+        respectExternal: true,
+        compilerOptions: {
+          removeComments: false,
+        },
+      }),
+    ],
   },
 ];
 
