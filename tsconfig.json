@@ -7,7 +7,7 @@
     "removeComments": false,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist/esm",
+    "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "moduleResolution": "node",
