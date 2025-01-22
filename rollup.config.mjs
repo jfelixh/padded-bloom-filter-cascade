@@ -19,8 +19,6 @@ const config = [
         tsconfig: "./tsconfig.json",
         declaration: true,
         declarationDir: "dist/types",
-        sourceMap: true,
-        inlineSources: true,
       }),
       resolve({
         preferBuiltins: true,
