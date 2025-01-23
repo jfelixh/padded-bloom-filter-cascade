@@ -11,10 +11,10 @@ export function constructBFC(
   validIds: Set<string>,
   revokedIds: Set<string>,
   rHat: number
-): [BloomFilter[], string] {
+): [BloomFilter[], string, number] {
   if (validIds?.size > rHat || revokedIds?.size > 2 * rHat) {
     console.log("Error: Requirements not fulfilled. Returning empty array");
-    return [[], "0"];
+    return [[], "0", 0];
   }
   const sHat = 2 * rHat;
   const neededR = rHat - validIds?.size;
@@ -61,7 +61,7 @@ export function constructBFC(
     includedSet = falsePositives;
     cascadeLevel++;
   }
-  return [filter, salted];
+  return [filter, salted, cascadeLevel];
 }
 
 export function isInBFC(
