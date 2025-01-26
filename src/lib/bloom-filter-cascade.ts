@@ -80,7 +80,7 @@ export function isInBFC(
   return !(cascadeLevel % 2 === 0);
 }
 
-export function toDataHexString(bfc: [BloomFilter[], string]): string {
+export function toDataHexString(bfc: [BloomFilter[], string, number]): string {
   const serializedCascade = bfc[0].map((filter) => {
     // Serialization from npm documentation
     var array = [].slice.call(filter.buckets);
@@ -104,13 +104,13 @@ export function toDataHexString(bfc: [BloomFilter[], string]): string {
   // Concatinate the salt and the buffer of filterCascade
   const serializedArray = Buffer.concat([
     serializedSalt,
-    serializedCascadeBuffer,
+    serializedCascadeBuffer
   ]);
   // Return a string hex value
   return `0x${serializedArray.toString("hex")}`;
 }
 
-export function fromDataHexString(serialized: string): [BloomFilter[], string] {
+export function fromDataHexString(serialized: string): [BloomFilter[], string,number] {
   // Create a buffer from the string hex value by first removing 0x
   const buffer = Buffer.from(serialized.slice(2), "hex");
 
@@ -145,5 +145,5 @@ export function fromDataHexString(serialized: string): [BloomFilter[], string] {
     );
     bloomFilters.push(currentFilter);
   }
-  return [bloomFilters, salt];
+  return [bloomFilters, salt, bloomFilters.length];
 }

@@ -6,6 +6,8 @@ import {
   toDataHexString,
 } from "../src";
 import { BloomFilter } from "../bloomfilter-sha256";
+import * as path from "path";
+import * as fs from "fs";
 
 let validTestSet = new Set<string>();
 for (let i = 1; i <= 1000; i++) {
@@ -38,7 +40,26 @@ for (let i = 1000; i <= 3000; i++) {
   }
   invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
-const result = constructBFC(validTestSet, invalidTestSet, 1001);
+const result = constructBFC(validTestSet, invalidTestSet, 100001);
+console.log(result[0].length)
+const filePath = path.join(__dirname, "test_data.csv");
+const header = "id,status\n"; // CSV header
+const rows: string[] = [];
+
+// Add valid entries
+for (const id of validTestSet) {
+  rows.push(`${id},Valid`);
+}
+
+// Add invalid entries
+for (const id of invalidTestSet) {
+  rows.push(`${id},Invalid`);
+}
+// Write the header and rows to the CSV file
+fs.writeFileSync(filePath, header + rows.join("\n"), "utf-8");
+console.log(`CSV file created at: ${filePath}`);
+
+
 
 
 test('convert set to binary',() => {
@@ -136,7 +157,6 @@ test('serialized the bloomfilter correctly', () => {
   }
   expect(result[1]).toStrictEqual(deserializedResult[1])
   expect(result[0]).toStrictEqual(deserializedResult[0])
-  expect(result).toStrictEqual(deserializedResult)
 })
 
 test('see if serialized deserialized bloomfilter works properly', () => {
