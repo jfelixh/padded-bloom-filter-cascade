@@ -10,7 +10,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 let validTestSet = new Set<string>();
-for (let i = 1; i <= 1000; i++) {
+for (let i = 1; i <= 180000; i++) {
   let randomHex = "";
   const hexLength = 64;
 
@@ -25,7 +25,7 @@ for (let i = 1; i <= 1000; i++) {
   validTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
 let invalidTestSet = new Set<string>();
-for (let i = 1000; i <= 3000; i++) {
+for (let i = 180000; i <= 540000; i++) {
   const hexLength = 64; // Desired length of each hex value
 
   let randomHex = "";
@@ -40,21 +40,21 @@ for (let i = 1000; i <= 3000; i++) {
   }
   invalidTestSet.add(randomHex); // Convert each number to a string and add it to the Set
 }
-const result = constructBFC(validTestSet, invalidTestSet, 100001);
+const result = constructBFC(validTestSet, invalidTestSet, 180001);
 console.log(result[0].length)
-const filePath = path.join(__dirname, "test_data.csv");
+const filePath = path.join("/Users/ichan-yeong/Downloads", "test_data.csv");
 const header = "id,status\n"; // CSV header
 const rows: string[] = [];
 
 // Add valid entries
-for (const id of validTestSet) {
+validTestSet.forEach((id) => {
   rows.push(`${id},Valid`);
-}
+})
 
 // Add invalid entries
-for (const id of invalidTestSet) {
+invalidTestSet.forEach((id) => {
   rows.push(`${id},Invalid`);
-}
+})
 // Write the header and rows to the CSV file
 fs.writeFileSync(filePath, header + rows.join("\n"), "utf-8");
 console.log(`CSV file created at: ${filePath}`);
@@ -165,7 +165,7 @@ test('see if serialized deserialized bloomfilter works properly', () => {
   validTestSet.forEach(id=>{
     expect(isInBFC(id,deserializedResult[0],deserializedResult[1])).toBe(true)
   })
-  for(const id of invalidTestSet){
+  invalidTestSet.forEach(id=>{
     expect(isInBFC(id,deserializedResult[0],deserializedResult[1])).toBe(false)
-  }
+  })
 })

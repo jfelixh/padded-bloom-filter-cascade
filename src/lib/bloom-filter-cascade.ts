@@ -61,7 +61,7 @@ export function constructBFC(
     includedSet = falsePositives;
     cascadeLevel++;
   }
-  return [filter, salted, cascadeLevel];
+  return [filter, salted, filter.length];
 }
 
 export function isInBFC(
